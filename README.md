@@ -23,6 +23,7 @@ Las carpetas por defecto son `NPCs`, `Lugares`, `Sesiones`, `Objetos`, `Faccione
 3. Discord muestra el borrador con **Aprobar** y **Corregir**. Corregir no vuelve a enviar el audio: revisa el texto.
 4. Aprobar crea o actualiza las notas. Si el personaje ya existía, no pisa la descripción; agrega una aparición de esa sesión.
 5. `/canon` busca en el vault. Con `QDRANT_URL` combina coincidencia por texto y búsqueda vectorial en Qdrant.
+6. `/preguntar` recupera notas relevantes y Gemini redacta una respuesta con contexto, citando archivos. Si la IA falla, devuelve extractos del vault.
 
 Pueden aprobar o corregir quien envió la sesión y quien administra el servidor.
 

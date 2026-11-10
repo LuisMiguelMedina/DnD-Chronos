@@ -8,7 +8,13 @@ from zoneinfo import ZoneInfo
 import discord
 from discord import app_commands
 
-from src.ai_engine import build_provider
+from src.ai_engine import GeminiProvider, build_provider
+from src.canon_qa import (
+    build_canon_request,
+    canon_qa_rules,
+    gather_sources,
+    vault_only_answer,
+)
 from src.config import Settings, load_settings, today_in
 from src.errors import AIError, ConfigError, DraftError, MediaError, StateError, VaultError
 from src.media import classify, detect_kind, prepare_media
@@ -21,7 +27,7 @@ from src.presentation import (
     format_search,
 )
 from src.state_store import StateStore
-from src.textutil import clean_name
+from src.textutil import clean_name, clip
 from src.vector_index import VaultVectorIndex, build_vector_index, search_canon
 from src.workflow import approve_draft, load_review, revise_draft_for_message
 
@@ -379,6 +385,58 @@ def register_commands(bot: ChroniclerBot) -> None:
             await interaction.followup.send("No hay nada en el vault que coincida con esa consulta.")
             return
         await interaction.followup.send(format_search(consulta, hits))
+
+    @bot.tree.command(
+        name="preguntar",
+        description="Pregunta sobre el canon: el bot responde con contexto del vault",
+    )
+    @app_commands.describe(consulta="Qué quieres saber de la campaña")
+    async def preguntar(interaction: discord.Interaction, consulta: str) -> None:
+        text = consulta.strip()
+        if len(text) < 3:
+            await interaction.response.send_message(
+                "Escribe al menos tres caracteres para preguntar.",
+                ephemeral=True,
+            )
+            return
+        if not isinstance(bot.provider, GeminiProvider):
+            await interaction.response.send_message(
+                "Las preguntas con contexto requieren AI_PROVIDER=gemini.",
+                ephemeral=True,
+            )
+            return
+        await interaction.response.defer()
+        try:
+            sources = await asyncio.to_thread(
+                gather_sources,
+                bot.vault,
+                bot.vector_index,
+                text,
+            )
+        except Exception as exc:
+            log.error("No pude leer el vault (%s)", type(exc).__name__)
+            await interaction.followup.send(
+                "No pude leer el vault. Revisa que esté montado.",
+                ephemeral=True,
+            )
+            return
+        if not sources:
+            await interaction.followup.send(
+                "No encontré notas en el vault sobre eso. "
+                "Prueba otro nombre o aprueba una sesión que lo mencione."
+            )
+            return
+        request = build_canon_request(text, sources)
+        try:
+            answer = await bot.provider.answer_canon_question(
+                campaign=bot.settings.campaign_name,
+                question=text,
+                request=request,
+                system=canon_qa_rules(bot.settings.campaign_name),
+            )
+            await interaction.followup.send(clip(answer, 1900))
+        except AIError:
+            await interaction.followup.send(vault_only_answer(text, sources))
 
     @bot.tree.error
     async def on_app_command_error(interaction: discord.Interaction, error: app_commands.AppCommandError) -> None:

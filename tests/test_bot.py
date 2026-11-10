@@ -28,7 +28,7 @@ def test_commands_and_persistent_review_buttons(tmp_path):
         store,
         IdleProvider(),
     )
-    assert sorted(command.name for command in bot.tree.get_commands()) == ["canon", "resumir"]
+    assert sorted(command.name for command in bot.tree.get_commands()) == ["canon", "preguntar", "resumir"]
     view = DraftView()
     assert view.timeout is None
     assert view.is_persistent()

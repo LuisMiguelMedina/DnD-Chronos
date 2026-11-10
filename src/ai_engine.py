@@ -336,6 +336,45 @@ class GeminiProvider:
         )
         return _draft_from_payload(payload, today=today)
 
+    async def answer_canon_question(
+        self,
+        *,
+        campaign: str,
+        question: str,
+        request: str,
+        system: str,
+    ) -> str:
+        del campaign, question
+        client = self._ensure_client()
+        config = {
+            "system_instruction": system,
+            "thinking_config": {"thinking_level": self.thinking_level},
+        }
+        last_error: Exception | None = None
+        for attempt in range(3):
+            try:
+                response = await client.aio.models.generate_content(
+                    model=self.model,
+                    contents=[request],
+                    config=config,
+                )
+                return text_from_response(response)
+            except AIResponseError:
+                raise
+            except Exception as exc:
+                last_error = exc
+                message = str(exc)
+                if "503" not in message and "UNAVAILABLE" not in message:
+                    break
+                import asyncio
+
+                await asyncio.sleep(4 * (attempt + 1))
+        log.error(
+            "Gemini no respondió la pregunta (%s)",
+            redact_secrets(f"{type(last_error).__name__}: {last_error}")[:300],
+        )
+        raise AIError("No pude responder con la IA. Mira el resumen del vault en el mensaje.") from None
+
     async def aclose(self) -> None:
         if not self._owns_client or self._client is None:
             return
@@ -578,6 +617,13 @@ class SessionTokenProvider:
         except Exception as exc:
             raise AIResponseError("La respuesta del proveedor no era JSON.") from exc
         return _unwrap_provider_payload(data)
+
+
+def text_from_response(response: object) -> str:
+    text = (getattr(response, "text", None) or "").strip()
+    if not text:
+        raise AIResponseError("Gemini respondió vacío.")
+    return text
 
 
 def payload_from_response(response: object) -> dict:

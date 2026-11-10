@@ -73,7 +73,7 @@ class VaultVectorIndex:
         titles: list[str] = []
         for note in result.notes:
             try:
-                text, title = _read_note(self.vault.root, note.relative_path)
+                text, title = read_note_text(self.vault.root, note.relative_path)
             except OSError as exc:
                 log.warning("No pude leer %s para Qdrant: %s", note.relative_path, exc)
                 continue
@@ -134,7 +134,7 @@ def _point_id(relative_path: str) -> str:
     return str(uuid.uuid5(uuid.NAMESPACE_URL, f"chronicler:{relative_path}"))
 
 
-def _read_note(root: Path, relative_path: str) -> tuple[str, str]:
+def read_note_text(root: Path, relative_path: str) -> tuple[str, str]:
     path = (root / relative_path).resolve()
     if not path.is_file() or not path.resolve().is_relative_to(root.resolve()):
         raise OSError("La nota queda fuera del vault.")
@@ -150,7 +150,7 @@ def _read_note(root: Path, relative_path: str) -> tuple[str, str]:
 
 def _snippet_from_vault(root: Path, relative_path: str, query: str) -> str:
     try:
-        text, _ = _read_note(root, relative_path)
+        text, _ = read_note_text(root, relative_path)
     except OSError:
         return ""
     from src.textutil import fold
