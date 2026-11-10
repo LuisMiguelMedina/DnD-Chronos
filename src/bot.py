@@ -414,8 +414,6 @@ def main() -> None:
         )
     log.info("Proveedor de IA: %s", settings.ai_provider)
     log.info("Vault: %s", settings.vault_path)
-    if vector_index is not None:
-        log.info("Qdrant: %s (colección %s)", settings.qdrant_url, settings.qdrant_collection)
     log.info("Campaña: %s", settings.campaign_name)
     vault = ObsidianVault(settings.vault_path, settings.folders)
     try:
@@ -424,6 +422,8 @@ def main() -> None:
         vector_index = build_vector_index(settings, vault)
     except (ConfigError, AIError, StateError) as exc:
         raise SystemExit(str(exc)) from None
+    if vector_index is not None:
+        log.info("Qdrant: %s (colección %s)", settings.qdrant_url, settings.qdrant_collection)
     bot = ChroniclerBot(settings, vault, store, provider, vector_index)
     try:
         bot.run(settings.discord_token, log_handler=None)
