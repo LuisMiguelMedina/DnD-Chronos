@@ -1,0 +1,14 @@
+.git
+.gitattributes
+__pycache__
+*.pyc
+.pytest_cache
+.env
+.venv
+venv
+*.md
+!src/**/*.md
+tests/__pycache__
+.coverage
+htmlcov
+.cursor

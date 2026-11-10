@@ -1,0 +1,19 @@
+services:
+  dungeon-chronicler:
+    build: .
+    container_name: dungeon-chronicler
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      OBSIDIAN_VAULT_PATH: /vault
+      DATABASE_PATH: /data/chronicler.db
+    volumes:
+      # Monta tu vault de Obsidian en el host, por ejemplo:
+      # - /home/tu-usuario/Obsidian/Mi-Campaña:/vault
+      - ${OBSIDIAN_HOST_PATH:-./vault-data}:/vault
+      - chronicler-data:/data
+    # El bot no expone puertos; solo sale a Internet vía Discord/Gemini
+
+volumes:
+  chronicler-data:
