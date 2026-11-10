@@ -1,3 +1,4 @@
+import tempfile
 from pathlib import Path
 
 import pytest
@@ -12,6 +13,17 @@ def _vault(tmp_path, folders=None):
     root = tmp_path / "vault"
     root.mkdir()
     return ObsidianVault(root, folders or VaultFolders())
+
+
+def _can_symlink() -> bool:
+    with tempfile.TemporaryDirectory() as directory:
+        probe = Path(directory) / "probe-target"
+        probe.write_text("x", encoding="utf-8")
+        try:
+            (Path(directory) / "probe-link").symlink_to(probe)
+        except OSError:
+            return False
+    return True
 
 
 def _frontmatter(path: Path) -> dict:
@@ -98,11 +110,6 @@ def test_custom_folder_search_and_missing_vault(tmp_path, draft):
     vault.commit(draft, draft_id="d" * 32, campaign="Campaña")
     assert (vault.root / "Personajes" / "Elara Voss.md").is_file()
 
-    outside = tmp_path / "fuera.md"
-    outside.write_text("secreto-fuera del vault\n", encoding="utf-8")
-    (vault.root / "puente.md").symlink_to(outside)
-    assert vault.search("secreto-fuera") == []
-
     hits = vault.search("elara")
     assert any(hit.relative_path.endswith("Elara Voss.md") for hit in hits)
     river = vault.search("rio")
@@ -114,3 +121,16 @@ def test_custom_folder_search_and_missing_vault(tmp_path, draft):
     assert not (tmp_path / "no-existe").exists()
     with pytest.raises(VaultError):
         missing.search("elara")
+
+
+@pytest.mark.skipif(
+    not _can_symlink(),
+    reason="Windows necesita privilegio o modo desarrollador para crear symlinks",
+)
+def test_search_ignores_symlinks_that_leave_the_vault(tmp_path, draft):
+    vault = _vault(tmp_path)
+    vault.commit(draft, draft_id="f" * 32, campaign="Campaña")
+    outside = tmp_path / "fuera.md"
+    outside.write_text("secreto-fuera del vault\n", encoding="utf-8")
+    (vault.root / "puente.md").symlink_to(outside)
+    assert vault.search("secreto-fuera") == []
