@@ -1,2 +1,4 @@
 # Auto detect text files and perform LF normalization
 * text=auto
+# El shebang de los scripts de shell tiene que terminar en LF dentro de Linux.
+*.sh text eol=lf

@@ -14,7 +14,8 @@ RUN pip install --no-cache-dir -r requirements.txt \
 
 COPY src ./src
 COPY entrypoint.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh
+# Quita CR por si el archivo llegó con finales de línea de Windows.
+RUN sed -i 's/\r$//' /entrypoint.sh && chmod +x /entrypoint.sh
 
 ENTRYPOINT ["/entrypoint.sh"]
 CMD ["python", "-m", "src"]
