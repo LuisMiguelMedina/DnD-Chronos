@@ -4,6 +4,12 @@ Copiloto de Discord para narradores de rol. Escucha el audio o el video de la me
 
 El audio no se guarda. En el vault entra el texto aprobado. SQLite solo recuerda el borrador para que los botones sigan vivos si el bot se reinicia.
 
+## Qdrant
+
+`docker-compose` levanta [Qdrant](https://qdrant.tech/) junto al bot. Define `QDRANT_URL` (en Compose ya va `http://qdrant:6333`). Los embeddings usan la misma `GEMINI_API_KEY` y `GEMINI_EMBEDDING_MODEL` (por defecto `text-embedding-004`).
+
+Solo las notas **aprobadas** entran al índice: al pulsar Aprobar, el bot escribe en Obsidian y actualiza Qdrant. Si Qdrant falla, el canon en disco no se revierte. Las notas antiguas no se reindexan solas; habrá que reindexarlas aparte si ya tenías vault.
+
 ## Decisiones
 
 El contenedor no adivina dónde está Obsidian. `docker-compose` monta `OBSIDIAN_VAULT_HOST_PATH` en `/vault`, y el bot escribe solo dentro de esa carpeta. Si el servidor no puede montar el vault, este bot no puede guardar las notas.
@@ -16,7 +22,7 @@ Las carpetas por defecto son `NPCs`, `Lugares`, `Sesiones`, `Objetos`, `Faccione
 2. El proveedor de IA devuelve un borrador: resumen, personajes, lugares, objetos, facciones, tramas e incertidumbres.
 3. Discord muestra el borrador con **Aprobar** y **Corregir**. Corregir no vuelve a enviar el audio: revisa el texto.
 4. Aprobar crea o actualiza las notas. Si el personaje ya existía, no pisa la descripción; agrega una aparición de esa sesión.
-5. `/canon` busca en el vault sin distinguir mayúsculas ni acentos.
+5. `/canon` busca en el vault. Con `QDRANT_URL` combina coincidencia por texto y búsqueda vectorial en Qdrant.
 
 Pueden aprobar o corregir quien envió la sesión y quien administra el servidor.
 

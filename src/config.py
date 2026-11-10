@@ -27,6 +27,9 @@ class Settings:
     gemini_api_key: str | None
     gemini_model: str
     gemini_thinking_level: str
+    gemini_embedding_model: str
+    qdrant_url: str | None
+    qdrant_collection: str
     gemini_base_url: str | None
     ai_base_url: str | None
     ai_session_token: str | None
@@ -107,6 +110,9 @@ def load_settings(env: Mapping[str, str] | None = None) -> Settings:
         gemini_api_key=gemini_key,
         gemini_model=_text(source, "GEMINI_MODEL", "gemini-3.8-flash"),
         gemini_thinking_level=_gemini_thinking_level(source, "GEMINI_THINKING_LEVEL", "HIGH"),
+        gemini_embedding_model=_text(source, "GEMINI_EMBEDDING_MODEL", "text-embedding-004"),
+        qdrant_url=_optional(source, "QDRANT_URL"),
+        qdrant_collection=_text(source, "QDRANT_COLLECTION", "chronicler-vault"),
         gemini_base_url=gemini_base,
         ai_base_url=session_base,
         ai_session_token=session_token,

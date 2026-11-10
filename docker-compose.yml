@@ -1,12 +1,21 @@
 services:
+  qdrant:
+    image: qdrant/qdrant:v1.15.4
+    volumes:
+      - qdrant-data:/qdrant/storage
+    restart: unless-stopped
+
   dungeonchronicler:
     build: .
+    depends_on:
+      - qdrant
     env_file:
       - .env
     environment:
       OBSIDIAN_VAULT_PATH: /vault
       DATABASE_PATH: /data/state.db
       CHRONICLER_TIMEZONE: ${CHRONICLER_TIMEZONE:-America/Mexico_City}
+      QDRANT_URL: http://qdrant:6333
     volumes:
       # La carpeta del host tiene que existir. Si no, Docker crea un directorio vacío.
       - ${OBSIDIAN_VAULT_HOST_PATH:?Define OBSIDIAN_VAULT_HOST_PATH con la ruta del vault}:/vault
@@ -17,3 +26,4 @@ services:
 
 volumes:
   chronicler-data:
+  qdrant-data:

@@ -22,6 +22,7 @@ from src.presentation import (
 )
 from src.state_store import StateStore
 from src.textutil import clean_name
+from src.vector_index import VaultVectorIndex, build_vector_index, search_canon
 from src.workflow import approve_draft, load_review, revise_draft_for_message
 
 log = logging.getLogger("dungeonchronicler")
@@ -74,6 +75,11 @@ class DraftView(discord.ui.View):
             log.error("Fallo al guardar el canon (%s)", type(exc).__name__)
             await interaction.followup.send(_generic_failure(), ephemeral=True)
             return
+        if bot.vector_index is not None:
+            try:
+                await asyncio.to_thread(bot.vector_index.index_commit, result)
+            except Exception as exc:
+                log.warning("No pude actualizar Qdrant (%s)", type(exc).__name__)
         record = bot.store.get_by_message(message.id)
         if record is not None:
             saved = build_saved_message(record.draft, draft_id=record.id, campaign=record.campaign)
@@ -172,6 +178,7 @@ class ChroniclerBot(discord.Client):
         vault: ObsidianVault,
         store: StateStore,
         provider,
+        vector_index: VaultVectorIndex | None = None,
     ) -> None:
         intents = discord.Intents.default()
         intents.message_content = True
@@ -180,6 +187,7 @@ class ChroniclerBot(discord.Client):
         self.vault = vault
         self.store = store
         self.provider = provider
+        self.vector_index = vector_index
         self.tree = app_commands.CommandTree(self)
         register_commands(self)
 
@@ -363,7 +371,7 @@ def register_commands(bot: ChroniclerBot) -> None:
             return
         await interaction.response.defer()
         try:
-            hits = await asyncio.to_thread(bot.vault.search, consulta, 5)
+            hits = await asyncio.to_thread(search_canon, bot.vault, bot.vector_index, consulta, 5)
         except VaultError as exc:
             await interaction.followup.send(str(exc), ephemeral=True)
             return
@@ -406,14 +414,17 @@ def main() -> None:
         )
     log.info("Proveedor de IA: %s", settings.ai_provider)
     log.info("Vault: %s", settings.vault_path)
+    if vector_index is not None:
+        log.info("Qdrant: %s (colección %s)", settings.qdrant_url, settings.qdrant_collection)
     log.info("Campaña: %s", settings.campaign_name)
     vault = ObsidianVault(settings.vault_path, settings.folders)
     try:
         store = StateStore(settings.database_path)
         provider = build_provider(settings)
+        vector_index = build_vector_index(settings, vault)
     except (ConfigError, AIError, StateError) as exc:
         raise SystemExit(str(exc)) from None
-    bot = ChroniclerBot(settings, vault, store, provider)
+    bot = ChroniclerBot(settings, vault, store, provider, vector_index)
     try:
         bot.run(settings.discord_token, log_handler=None)
     except discord.LoginFailure:
