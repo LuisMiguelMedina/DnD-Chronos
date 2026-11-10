@@ -536,7 +536,7 @@ class SessionTokenProvider:
                 "transcript": transcript,
                 "filename": filename,
                 "mime_type": mime_type,
-                "media_base64": base64.b64encode(media).decode("ascii") if media else None,
+                "media_base64": base64.b64encode(media).decode("ascii") if media else "",
                 "correction": correction,
                 "draft": draft.to_dict() if draft is not None else None,
                 "instruction": instruction + "\n\n" + request,

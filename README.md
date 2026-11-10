@@ -39,7 +39,7 @@ Si tienes una pasarela compatible con el SDK de Gemini, deja `AI_PROVIDER=gemini
   "transcript": null,
   "filename": "mesa.mp3",
   "mime_type": "audio/mpeg",
-  "media_base64": null,
+  "media_base64": "",
   "correction": null,
   "draft": null,
   "instruction": "instrucciones y pedido"

@@ -298,7 +298,7 @@ async def _session_cases():
     )
     body = chronicle.calls[0]["json"]
     assert chronicle.calls[0]["url"] == "https://privado.example/v1/chronicle"
-    assert body["media_base64"] is None
+    assert body["media_base64"] == ""
     assert body["correction"] == "La cueva queda al norte."
     assert body["draft"]["title"] == "La cueva"
     assert "sesion-token-de-prueba" not in json.dumps(body)
@@ -336,3 +336,40 @@ def test_build_provider_selects_the_configured_backend(tmp_path):
         await session.aclose()
 
     asyncio.run(close())
+
+
+def test_chronicle_sends_audio_base64_and_empty_string_without_media():
+    asyncio.run(_chronicle_media_cases())
+
+
+async def _chronicle_media_cases():
+    chronicle = FakeHttp(DRAFT)
+    private = SessionTokenProvider(
+        base_url="https://privado.example",
+        token="sesion-token-de-prueba",
+        model="modelo",
+        style="chronicle",
+        timeout_seconds=30,
+        client=chronicle,
+    )
+    await private.structure_session(
+        campaign="Las Cenizas",
+        notes="",
+        today="2026-11-10",
+        media=b"mp3-bytes",
+        mime_type="audio/mpeg",
+        filename="mesa.mp3",
+        transcript=None,
+    )
+    await private.structure_session(
+        campaign="Las Cenizas",
+        notes="Notas de la mesa que son suficientemente largas.",
+        today="2026-11-10",
+        media=None,
+        mime_type=None,
+        filename=None,
+        transcript=None,
+    )
+    with_media, without_media = (call["json"] for call in chronicle.calls)
+    assert with_media["media_base64"] == "bXAzLWJ5dGVz"
+    assert without_media["media_base64"] == ""

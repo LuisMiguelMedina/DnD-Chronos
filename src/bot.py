@@ -25,6 +25,7 @@ from src.textutil import clean_name
 from src.workflow import approve_draft, load_review, revise_draft_for_message
 
 log = logging.getLogger("dungeonchronicler")
+_BAD_TOKEN_MESSAGE = "Discord rechazó DISCORD_TOKEN. Revisa el token en .env."
 
 
 class DraftView(discord.ui.View):
@@ -413,7 +414,14 @@ def main() -> None:
     except (ConfigError, AIError, StateError) as exc:
         raise SystemExit(str(exc)) from None
     bot = ChroniclerBot(settings, vault, store, provider)
-    bot.run(settings.discord_token, log_handler=None)
+    try:
+        bot.run(settings.discord_token, log_handler=None)
+    except discord.LoginFailure:
+        raise SystemExit(_BAD_TOKEN_MESSAGE) from None
+    except discord.HTTPException as exc:
+        if exc.status == 401:
+            raise SystemExit(_BAD_TOKEN_MESSAGE) from None
+        raise
 
 
 def _bot(interaction: discord.Interaction) -> ChroniclerBot:
