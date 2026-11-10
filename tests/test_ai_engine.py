@@ -195,6 +195,8 @@ async def _gemini_cases():
     call = inline.models.calls[0]
     assert "No inventes" in call["config"]["system_instruction"]
     assert "Las Cenizas" in call["config"]["system_instruction"]
+    assert call["config"]["thinking_config"] == {"thinking_level": "HIGH"}
+    assert "temperature" not in call["config"]
     assert call["contents"][1] == {"inline": "audio/mpeg", "size": 4}
     assert inline.files.uploaded is None
 

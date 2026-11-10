@@ -24,6 +24,10 @@ Pueden aprobar o corregir quien envió la sesión y quien administra el servidor
 
 `AI_PROVIDER=gemini` usa la API de Google con `GEMINI_API_KEY`. El modelo por defecto es `gemini-3.8-flash`; cámbialo con `GEMINI_MODEL` si tu clave no lo tiene (por ejemplo `gemini-2.5-flash`).
 
+Con Google AI Pro puedes gastar el crédito mensual de Cloud en esa API: crea la clave en AI Studio, activa facturación prepaga (depósito mínimo de 5 USD) y aplica el beneficio en [Use your Google AI plan credits in AI Studio](https://aistudio.google.com/learn/use-google-ai-plan-credits-in-ai-studio). El uso del bot se descuenta de ese crédito antes que del saldo prepago.
+
+`GEMINI_THINKING_LEVEL` controla el razonamiento del modelo (`LOW`, `MEDIUM`, `HIGH`). Por defecto es `HIGH`, porque el cronista suele necesitar mucho contexto. Bájalo a `MEDIUM` si te quedas corto de cuota o quieres respuestas más rápidas.
+
 Si tienes una pasarela compatible con el SDK de Gemini, deja `AI_PROVIDER=gemini` y define `GEMINI_BASE_URL` más `AI_SESSION_TOKEN`. La clave puede omitirse en ese caso.
 
 `AI_PROVIDER=session` manda `AI_SESSION_TOKEN` como `Authorization: Bearer` a un proveedor privado. Hace falta `AI_BASE_URL` y `AI_MODEL`.

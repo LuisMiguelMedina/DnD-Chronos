@@ -24,6 +24,7 @@ def test_load_settings_hides_secrets(tmp_path):
     assert "super-secret-token" not in rendered
     assert "AIzaSuperSecretKey123456" not in rendered
     assert settings.ai_provider == "gemini"
+    assert settings.gemini_thinking_level == "HIGH"
     assert settings.guild_id is None
     assert settings.folders.npcs == "NPCs"
     assert settings.campaign_name == "Campaña"
@@ -78,6 +79,8 @@ def test_rejects_bad_values(tmp_path):
         load_settings(_env(tmp_path, DISCORD_GUILD_ID="0"))
     with pytest.raises(ConfigError):
         load_settings(_env(tmp_path, CHRONICLER_TIMEZONE="No/Existe"))
+    with pytest.raises(ConfigError):
+        load_settings(_env(tmp_path, GEMINI_THINKING_LEVEL="minimal"))
 
 
 def test_watch_channels_and_timezone(tmp_path):

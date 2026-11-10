@@ -16,6 +16,7 @@ from src.textutil import clean_name
 DEFAULT_INLINE_MEDIA_BYTES = 15 * 1024 * 1024
 DEFAULT_MAX_MEDIA_BYTES = 25 * 1024 * 1024
 _ABSOLUTE_MEDIA_CAP = 100 * 1024 * 1024
+_GEMINI_THINKING_LEVELS = frozenset({"LOW", "MEDIUM", "HIGH"})
 
 
 @dataclass(frozen=True)
@@ -25,6 +26,7 @@ class Settings:
     ai_provider: str
     gemini_api_key: str | None
     gemini_model: str
+    gemini_thinking_level: str
     gemini_base_url: str | None
     ai_base_url: str | None
     ai_session_token: str | None
@@ -104,6 +106,7 @@ def load_settings(env: Mapping[str, str] | None = None) -> Settings:
         ai_provider=provider,
         gemini_api_key=gemini_key,
         gemini_model=_text(source, "GEMINI_MODEL", "gemini-3.8-flash"),
+        gemini_thinking_level=_gemini_thinking_level(source, "GEMINI_THINKING_LEVEL", "HIGH"),
         gemini_base_url=gemini_base,
         ai_base_url=session_base,
         ai_session_token=session_token,
@@ -183,6 +186,14 @@ def _id_set(env: Mapping[str, str], key: str) -> frozenset[int]:
             raise ConfigError(f"{key} contiene un valor que no es un id de canal: {item}")
         values.append(int(item))
     return frozenset(values)
+
+
+def _gemini_thinking_level(env: Mapping[str, str], key: str, default: str) -> str:
+    raw = _text(env, key, default) or default
+    level = raw.upper()
+    if level not in _GEMINI_THINKING_LEVELS:
+        raise ConfigError(f"{key} debe ser LOW, MEDIUM o HIGH.")
+    return level
 
 
 def _folder(env: Mapping[str, str], key: str, default: str) -> str:

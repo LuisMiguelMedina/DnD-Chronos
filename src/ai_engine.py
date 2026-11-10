@@ -73,6 +73,7 @@ def build_provider(settings: Settings) -> AIProvider:
         return GeminiProvider(
             api_key=settings.gemini_api_key,
             model=settings.gemini_model,
+            thinking_level=settings.gemini_thinking_level,
             base_url=settings.gemini_base_url,
             session_token=settings.ai_session_token,
             timeout_seconds=settings.ai_timeout_seconds,
@@ -106,6 +107,15 @@ def gemini_client_kwargs(
     if api_key:
         kwargs["api_key"] = api_key
     return kwargs
+
+
+def gemini_generate_config(*, thinking_level: str, system_instruction: str) -> dict:
+    return {
+        "system_instruction": system_instruction,
+        "response_mime_type": "application/json",
+        "response_json_schema": session_json_schema(),
+        "thinking_config": {"thinking_level": thinking_level},
+    }
 
 
 def session_rules(campaign: str) -> str:
@@ -257,6 +267,7 @@ class GeminiProvider:
         *,
         api_key: str | None,
         model: str,
+        thinking_level: str = "HIGH",
         base_url: str | None = None,
         session_token: str | None = None,
         timeout_seconds: float = 300,
@@ -266,6 +277,7 @@ class GeminiProvider:
         sleeper=None,
     ) -> None:
         self.model = model
+        self.thinking_level = thinking_level
         self.inline_limit = inline_limit
         self._kwargs = gemini_client_kwargs(
             api_key=api_key,
@@ -364,12 +376,10 @@ class GeminiProvider:
             response = await client.aio.models.generate_content(
                 model=self.model,
                 contents=contents,
-                config={
-                    "temperature": 0.2,
-                    "system_instruction": system,
-                    "response_mime_type": "application/json",
-                    "response_json_schema": session_json_schema(),
-                },
+                config=gemini_generate_config(
+                    thinking_level=self.thinking_level,
+                    system_instruction=system,
+                ),
             )
             return payload_from_response(response)
         except AIError:
