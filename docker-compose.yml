@@ -1,0 +1,19 @@
+services:
+  dungeonchronicler:
+    build: .
+    env_file:
+      - .env
+    environment:
+      OBSIDIAN_VAULT_PATH: /vault
+      DATABASE_PATH: /data/state.db
+      CHRONICLER_TIMEZONE: ${CHRONICLER_TIMEZONE:-America/Mexico_City}
+    volumes:
+      # La carpeta del host tiene que existir. Si no, Docker crea un directorio vacío.
+      - ${OBSIDIAN_VAULT_HOST_PATH:?Define OBSIDIAN_VAULT_HOST_PATH con la ruta del vault}:/vault
+      - chronicler-data:/data
+    restart: unless-stopped
+    # Descomenta la línea siguiente para usar el uid de tu usuario en vez de root.
+    # user: "1000:1000"
+
+volumes:
+  chronicler-data:
